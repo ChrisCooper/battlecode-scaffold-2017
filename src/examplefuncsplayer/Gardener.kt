@@ -3,6 +3,7 @@ package examplefuncsplayer
 import battlecode.common.*
 
 import examplefuncsplayer.RobotPlayer.rc
+
 class Gardener(rc: RobotController) : SafeRobotBrain(rc) {
 
     val FULL_CIRCLE = (Math.PI * 2)
@@ -12,26 +13,52 @@ class Gardener(rc: RobotController) : SafeRobotBrain(rc) {
             .map { i -> FULL_CIRCLE * (i / NUM_CIRCLE_SPACES) }
             .map { rads -> Direction(rads.toFloat()) }
 
-    val MIN_GARDENER_DISTANCE = 6.2f
+    val MIN_GARDENER_DISTANCE = 8f
 
     val UNIT_DIRECTION = 0
     var startedGardening = false
+    var firstSpawned = false
+    var hasSpawnedLumberjack = false
+    var hasSpawnedScout = false
 
 
     //val PLANTING_SPACE = rc.
 
     override fun runTurn() {
-        println("I am a gardener")
-
         // Build some trees
         //rc.setIndicatorLine(rc.location, rc.location.add(Direction.NORTH, 5f), 100, 100, 100)
+
+        if (!hasSpawnedScout) {
+            spawnScout(Direction(0f))
+        }
+        if (!hasSpawnedLumberjack) {
+            spawnLumberjack(Direction(0f))
+        }
 
         if (startedGardening) {
             plantAndWater()
         } else {
+            if (firstSpawned) {
+
+                moveAwayFrom(rc.senseNearbyRobots(-1f, US).toList())
+            }
             findGardeningSpace()
         }
 
+    }
+
+    private fun spawnScout(direction: Direction) {
+        if (rc.canBuildRobot(RobotType.SCOUT, direction)) {
+            rc.buildRobot(RobotType.SCOUT, direction)
+            hasSpawnedScout = true
+        }
+    }
+
+    private fun spawnLumberjack(direction: Direction) {
+        if (rc.canBuildRobot(RobotType.LUMBERJACK, direction)) {
+            rc.buildRobot(RobotType.LUMBERJACK, direction)
+            hasSpawnedLumberjack = true
+        }
     }
 
     private fun plantAndWater() {
@@ -40,11 +67,18 @@ class Gardener(rc: RobotController) : SafeRobotBrain(rc) {
                 rc.plantTree(dir)
             }
         }
-        TREE_DIRECTIONS.forEach { dir ->
-            val waterLocation = rc.location.add(dir, robotType.bodyRadius + 1f)
-            rc.setIndicatorDot(waterLocation, 200, 255, 200)
-            if (rc.canWater(waterLocation)) {
-                rc.water(waterLocation)
+        val nearbyTrees = rc.senseNearbyTrees(robotType.bodyRadius + 1f, rc.team)
+        if (nearbyTrees.isNotEmpty()) {
+            var minHealthTree: TreeInfo = nearbyTrees[0]
+            nearbyTrees.forEach { tree ->
+                rc.setIndicatorDot(tree.location, 200, 255, 200)
+                if (minHealthTree.health > tree.health) {
+                    minHealthTree = tree
+                }
+            }
+            if (rc.canWater(minHealthTree.ID)) {
+                rc.setIndicatorDot(minHealthTree.location, 50, 255, 50)
+                rc.water(minHealthTree.ID)
             }
         }
     }
@@ -81,33 +115,7 @@ class Gardener(rc: RobotController) : SafeRobotBrain(rc) {
 
     }
 
-    private fun moveWithLocalAvoidance(direction: Direction) {
-        if (rc.canMove(direction)) {
-            rc.move(direction)
-        } else {
 
-        }
-    }
-}
-
-
-class Vector {
-    var x: Float
-    var y: Float
-
-    constructor(x: Float, y: Float) {
-        this.x = x
-        this.y = y
-    }
-
-    fun length() = Math.sqrt((x * x + y * y).toDouble()).toFloat()
-
-    override fun toString(): String = "Vector($x, $y)"
-}
-
-
-fun FromTo(from: MapLocation, to: MapLocation): Vector {
-    return Vector(to.x - from.x, to.y - from.y)
 }
 
 

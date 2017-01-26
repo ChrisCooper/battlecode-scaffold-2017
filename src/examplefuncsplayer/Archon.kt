@@ -16,6 +16,8 @@ class Archon(rc: RobotController) : SafeRobotBrain(rc) {
         // Move randomly
         tryMove(randomDirection())
 
+
+
     }
 
 }
