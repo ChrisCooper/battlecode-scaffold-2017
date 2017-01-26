@@ -41,7 +41,7 @@ class Gardener(rc: RobotController) : SafeRobotBrain(rc) {
             }
         }
         TREE_DIRECTIONS.forEach { dir ->
-            val waterLocation = rc.location.add(dir, 1f)
+            val waterLocation = rc.location.add(dir, robotType.bodyRadius + 1f)
             rc.setIndicatorDot(waterLocation, 200, 255, 200)
             if (rc.canWater(waterLocation)) {
                 rc.water(waterLocation)
